@@ -1,0 +1,112 @@
+---
+title: "STAT 4354 HW 3"
+output: pdf_document
+date: "2025-02-15"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 3
+
+The CDF of a two-parameter exponential distribution is 1 - e^(-lambda(x - theta)). The inverse of this is theta - (1/lamba)(ln(1 - u)). Since 1 - u follows the same distribution as u, we can rewrite as theta - (1/lambda)(ln(u)). Now we can generate a sample with some n, theta, and lambda.
+
+```{r}
+lambda = 1
+theta = 2
+num = 1000
+
+set.seed(1234)
+u = runif(num, 0, 1)
+x = theta - (1 / lambda) * log(u)
+```
+
+Now, with our sample generated, we can compare it with our theoretical quantiles.
+
+```{r}
+quantiles <- seq(0.01, 0.99, length.out = num)
+theoretical_quantiles <- theta - (1 / lambda) * log(quantiles)
+```
+
+```{r}
+qqplot(theoretical_quantiles, sort(x),
+       main = "Q-Q Plot: Sample vs. Theoretical Two-Parameter Exponential",
+       xlab = "Theoretical Quantiles", ylab = "Sample Quantiles",
+       pch = 16, col = "blue")
+abline(0, 1, col = 'red', lwd = 2)
+```
+
+We can see that the empirical quantiles are generally very similar to the theoretical ones, only diverging towards the high end. This shows that our generated data is a relatively good representation of the theoretical distribution.
+
+## Question 4
+
+The CDF of the Laplace distribution is broken down by if U is greater than or less than 1/2.
+
+```{r}
+set.seed(1234)
+u = runif(num, 0, 1)
+for (i in 1:1000) {
+  if (u[i] < 0.5) {
+    x[i] = log(2*u[i])
+  }
+  else
+    x[i] = -(log(2 * (1 - u[i])))
+}
+```
+
+Now we can graph our comparison.
+```{r}
+library(ggplot2)
+data <- data.frame(x)
+
+ggplot(data, aes(x = x)) +
+  geom_histogram(aes(y = after_stat(density)), bins = 50, fill = "blue", alpha = 0.5) +
+  stat_function(fun = function(x) { (1/2) * exp(-abs(x)) },
+                color = "red", linewidth = 1) +
+  labs(title = "Density Histogram of Generated Samples vs. Theoretical Laplace PDF",
+       x = "x", y = "Density") +
+  theme_minimal()
+```
+We can see from the graph above that our generated data (blue) follows to theoretical distribution (red) very well.
+
+## Question 5
+
+We must first generate values based on discrete distribution.
+```{r}
+values <- c(0, 1, 2, 3, 4)
+probabilities <- c(0.1, 0.2, 0.2, 0.2, 0.3)
+
+cdf <- cumsum(probabilities)
+```
+
+Transform uniform distribution to get sample.
+
+```{r}
+set.seed(1234)
+u <- runif(num)
+for (i in 1:1000) {
+  if (u[i] > cdf[4])
+    x[i] <- values[5]
+  else if (u[i] > cdf[3])
+    x[i] <- values[4]
+  else if (u[i] > cdf[2])
+    x[i] <- values[3]
+  else if (u[i] > cdf[1])
+    x[i] <- values[2]
+  else
+    x[i] <- values[1]
+}
+```
+
+Now we must compare with theoretical probabilities.
+
+```{r}
+table(x) # show counts
+
+emp_p <- prop.table(table(x))
+true_p <- c(0.1, 0.2, 0.2, 0.2, 0.3)
+cbind(Empirical = emp_p, Theoretical = true_p)
+```
+
+We can see in the table above that the empirical and theoretical probabilities are very similar, so our data is a good representation of the theoretical distribution.
